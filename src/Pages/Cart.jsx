@@ -1,9 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeFromCart, clearCart, incrementQuantity, decrementQuantity } from '@/redux/cartSlice';
 import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, CreditCard, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+
+const CartItem = React.memo(({ item, onRemove, onIncrement, onDecrement }) => (
+  <div
+    className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+  >
+    <div className="flex items-center gap-4">
+      <img
+        src={item.image}
+        alt={item.title}
+        className="w-24 h-24 object-contain rounded bg-gray-50"
+        loading="lazy"
+      />
+      <div className="flex-grow">
+        <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2">{item.title}</h3>
+        <p className="text-sm text-gray-500 mb-2 capitalize">{item.category}</p>
+        <p className="text-xl font-bold text-orange-600">${item.price.toFixed(2)}</p>
+      </div>
+      <div className="flex flex-col items-end gap-3">
+        <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+          <button 
+            onClick={() => onDecrement(item.id)}
+            className="text-gray-600 hover:text-orange-600 transition"
+            disabled={item.quantity === 1}
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="font-semibold w-8 text-center">{item.quantity}</span>
+          <button 
+            onClick={() => onIncrement(item.id)}
+            className="text-gray-600 hover:text-orange-600 transition"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+        <button
+          onClick={() => onRemove(item.id)}
+          className="text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span className="text-sm">Remove</span>
+        </button>
+      </div>
+    </div>
+    <div className="mt-4 pt-4 border-t flex justify-between items-center">
+      <span className="text-gray-600">Item Total:</span>
+      <span className="font-bold text-gray-800">${(item.price * item.quantity).toFixed(2)}</span>
+    </div>
+  </div>
+));
+
+CartItem.displayName = 'CartItem';
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -11,32 +62,35 @@ const Cart = () => {
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = subtotal > 50 ? 0 : 5.99;
-  const tax = subtotal * 0.1; // 10% tax
-  const total = subtotal + shipping + tax - discount;
+  const { subtotal, shipping, tax, total } = useMemo(() => {
+    const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const shipping = subtotal > 50 ? 0 : 5.99;
+    const tax = subtotal * 0.1;
+    const total = subtotal + shipping + tax - discount;
+    return { subtotal, shipping, tax, total };
+  }, [cartItems, discount]);
 
-  const handleRemove = (id) => {
+  const handleRemove = useCallback((id) => {
     dispatch(removeFromCart(id));
     toast.success('Item removed from cart');
-  };
+  }, [dispatch]);
 
-  const handleClearCart = () => {
+  const handleClearCart = useCallback(() => {
     if (window.confirm('Are you sure you want to clear your cart?')) {
       dispatch(clearCart());
       toast.success('Cart cleared');
     }
-  };
+  }, [dispatch]);
 
-  const handleIncrement = (id) => {
+  const handleIncrement = useCallback((id) => {
     dispatch(incrementQuantity(id));
-  };
+  }, [dispatch]);
 
-  const handleDecrement = (id) => {
+  const handleDecrement = useCallback((id) => {
     dispatch(decrementQuantity(id));
-  };
+  }, [dispatch]);
 
-  const handleApplyPromo = () => {
+  const handleApplyPromo = useCallback(() => {
     if (promoCode.toLowerCase() === 'save10') {
       setDiscount(subtotal * 0.1);
       toast.success('Promo code applied! 10% off');
@@ -46,7 +100,7 @@ const Cart = () => {
     } else {
       toast.error('Invalid promo code');
     }
-  };
+  }, [promoCode, subtotal]);
 
   if (cartItems.length === 0) {
     return (
@@ -88,52 +142,13 @@ const Cart = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
-              <div
+              <CartItem
                 key={item.id}
-                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
-              >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-24 h-24 object-contain rounded bg-gray-50"
-                  />
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2">{item.title}</h3>
-                    <p className="text-sm text-gray-500 mb-2 capitalize">{item.category}</p>
-                    <p className="text-xl font-bold text-orange-600">${item.price.toFixed(2)}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-3">
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-                      <button 
-                        onClick={() => handleDecrement(item.id)}
-                        className="text-gray-600 hover:text-orange-600 transition"
-                        disabled={item.quantity === 1}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="font-semibold w-8 text-center">{item.quantity}</span>
-                      <button 
-                        onClick={() => handleIncrement(item.id)}
-                        className="text-gray-600 hover:text-orange-600 transition"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleRemove(item.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="text-sm">Remove</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                  <span className="text-gray-600">Item Total:</span>
-                  <span className="font-bold text-gray-800">${(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              </div>
+                item={item}
+                onRemove={handleRemove}
+                onIncrement={handleIncrement}
+                onDecrement={handleDecrement}
+              />
             ))}
 
             <div className="flex justify-between items-center">
