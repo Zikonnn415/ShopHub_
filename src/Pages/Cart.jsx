@@ -55,7 +55,6 @@ const CartItem = React.memo(({ item, onRemove, onIncrement, onDecrement }) => (
 ));
 
 CartItem.displayName = 'CartItem';
-
 const Cart = () => {
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
