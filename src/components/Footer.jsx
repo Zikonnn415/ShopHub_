@@ -87,7 +87,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 pt-6 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} ShopHub. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Sugam Shrestha. All rights reserved.</p>
         </div>
       </div>
     </footer>
